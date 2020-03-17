@@ -1,2 +1,2 @@
 # FakeNewsDetection
-Milestones for Data Science course 2019/20 at UCPH
+Milestones for Data Science course 2020 at UCPH
