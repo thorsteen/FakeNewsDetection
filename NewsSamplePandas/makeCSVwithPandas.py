@@ -9,8 +9,8 @@ import re
 import pandas as pd
 
 #filename ='news_sample.csv'
-filename = 'clean-100k.csv'
-
+#filename = '../../Data/clean-100k.csv'
+filename = '../../Data/1mio-raw.csv'
 
 def clean_text(content):
 
@@ -68,29 +68,32 @@ def simpleEntityToCSV(filename, dictionary):
 #------------------------------------------#
 data = pd.read_csv(filename)
 #to avoid problems later on
-#data = data.drop([0])
-
 data = data.where(pd.notnull(data), '<null>')
 
 
 #using first column as article id
 #is wrong due to false in
 #data.iloc[:,0].is_unique
+
 """
 columns = list(data.columns)
 columns[0] = 'article_id' 
 data.columns = columns
 """
+#true in
+#data['id'].is_unique
+#which we use later on
 
 #clean text
-for i in data['content']:
-    i = clean_text(i)
+for i in data['content'].index:
+    data.loc[i,'content'] = clean_text(data.loc[i,'content'])
+    
+#we clean all at once which takes time
 
 author  = dict()
 domain  = dict() 
 typ     = dict()
 keyword = dict()   
-article = dict()
 
 
 #we fill authors into author dictionary, sort to make sure they get the same id every time the code is run
@@ -118,21 +121,6 @@ putinDic(domain,data['domain'])
 #fills types into author dictionary, sort to make sure they get the same id every time the code is run
 putinDic(typ,data['type'])
 
-#making dict to dataframe directly 
-#wrong order
-"""
-#keys becomes index
-author_entity = pd.DataFrame.from_dict(author, orient='index')
-keyword_entity = pd.DataFrame.from_dict(keyword, orient='index')
-domain_entity = pd.DataFrame.from_dict(domain, orient='index')
-type_entity = pd.DataFrame.from_dict(typ, orient='index')
-
-#makes csv with pandas, writing indexes because they are dict keys
-author_entity.to_csv('author_entity.csv', index = True, header = False)
-keyword_entity.to_csv('keyword_entity.csv', index = True, header = False)
-domain_entity.to_csv('domain_entity.csv', index = True,header = False)
-type_entity.to_csv('type_entity.csv', index = True,header = False)
-"""
 
 #use file.io method instead
 simpleEntityToCSV("author_entity.csv", author)
