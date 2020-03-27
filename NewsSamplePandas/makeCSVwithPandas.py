@@ -3,14 +3,24 @@
 Created on Fri Mar 20 10:30:54 2020
 
 @author: tsl19
+
+WARNING: RUNNING TIME IS VERY LONG
 """
 
 import re
 import pandas as pd
+import time
+start_time = time.time()
 
 #filename ='news_sample.csv'
 #filename = '../../Data/clean-100k.csv'
 filename = '../../Data/1mio-raw.csv'
+
+#så man kan se mere print i terminal
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', -1)
 
 def clean_text(content):
 
@@ -67,19 +77,14 @@ def simpleEntityToCSV(filename, dictionary):
 
 #------------------------------------------#
 data = pd.read_csv(filename)
-#to avoid problems later on
-data = data.where(pd.notnull(data), '<null>')
+print('Read data')
+#to avoid NaNs and other nulls we set these to string '<null>'
+#data = data.where(pd.notnull(data), '<null>')
 
 
 #using first column as article id
 #is wrong due to false in
 #data.iloc[:,0].is_unique
-
-"""
-columns = list(data.columns)
-columns[0] = 'article_id' 
-data.columns = columns
-"""
 #true in
 #data['id'].is_unique
 #which we use later on
@@ -87,9 +92,10 @@ data.columns = columns
 #clean text
 for i in data['content'].index:
     data.loc[i,'content'] = clean_text(data.loc[i,'content'])
-    
 #we clean all at once which takes time
+print('Finished cleaning')
 
+#define dicts
 author  = dict()
 domain  = dict() 
 typ     = dict()
@@ -97,50 +103,52 @@ keyword = dict()
 
 
 #we fill authors into author dictionary, sort to make sure they get the same id every time the code is run
-temp = []
-new = []
-         
+authors = []
 for i in data['authors']:
     split_authors = i.split(", ")
-    for j in split_authors:
-        temp.append(j)
-putinDic(author, temp)
+    for name in split_authors:
+        authors.append(name[:64]) #names must not be longer than 64 char
+        
+print('finished splitting authors and making authors list')
 
-#we fill metaKeywords into author dictionary, sort to make sure they get the same id every time the code is run
-tempKeywords = data['meta_keywords']
 keywords = []
-for words in tempKeywords:
-    temp = re.split(r'[;,"\'\[\]]\s*', words)
-    for word in temp:
-        keywords.append(word)
+for words in data['meta_keywords']:
+    split_keywords = re.split(r'[;,"\'\[\]]\s*', words)
+    for word in split_keywords:
+        keywords.append(word[:128]) #make sure that every keyword is no longer than 128 char
+
+print('finished splitting keywords and making keywords list')
+
+
+#make dicts with key string and id int from sorted list
+putinDic(author, authors)
+
 putinDic(keyword,keywords)
 
-#fills domains into author dictionary, sort to make sure they get the same id every time the code is run
 putinDic(domain,data['domain'])
 
-#fills types into author dictionary, sort to make sure they get the same id every time the code is run
 putinDic(typ,data['type'])
+print('finished making dictionaries')
 
 
-#use file.io method instead
+#use create csv files for simple entities, ids created with dicts
 simpleEntityToCSV("author_entity.csv", author)
 simpleEntityToCSV("keyword_entity.csv", keyword)
 simpleEntityToCSV("domain_entity.csv", domain)
 simpleEntityToCSV("type_entity.csv", typ)
+print('finished author_entity, keyword_entity, domain_entity, type_entity csv files')
 
 
-#we need to make two new cols to get correct ID of type and domain as well as right meta keywords and author
+#we need to make two new cols to get the correct ID of type and domain
+#will impact running time
 domain_id = []
 type_id = []
 for i in data['domain']: 
-    domain_id.append(domain.setdefault(i),)
+    domain_id.append(domain.get(i),)
 for j in data['type']:
-    type_id.append(typ.setdefault(j))
+    type_id.append(typ.get(j))
 
-
-#index is the same as article_id
 #we do not need indexes and header when making csv
-
 article_entity = pd.concat([data['id'],
                                 data['title'].str.lower(),
                                 data['content'],
@@ -154,30 +162,35 @@ article_entity.to_csv('article_entity.csv', index = False, header = False, sep =
 
 webpage_relation = pd.concat([data['url'],data['id'],pd.DataFrame(domain_id, columns = ['domain_id'] )], axis = 1)
 webpage_relation.to_csv('webpage_relation.csv',index = False, header = False)
-
+print('finished making article_entity webpage_relation csv files')
 
 #Pandas becomes difficult when working with undefined sizes so
-#we use file.io method for authors and keywords
+#we use file method for authors and keywords
 
 tagsFile = open("tags_relation.csv", "w+", encoding="utf-8")
 article_id = 0
 
 for m in data['meta_keywords']:
-    mkeywords = re.split(r'[;,"\'\[\]]\s*', m)
-    for meta_keyword in mkeywords:
-        tagsFile.write("%s,%s\n" % (data.loc[article_id,"id"], keyword.setdefault(meta_keyword.lower())))
+    split_keywords = re.split(r'[;,"\'\[\]]\s*', m)
+    for meta_keyword in split_keywords:
+        tagsFile.write("%s,%s\n" % (data.loc[article_id,"id"], keyword.get(meta_keyword.lower())))
     article_id += 1
 
 tagsFile.close()
+
+print('finished making article_entity, webpage_relation csv files')
+
 
 writtenByFile = open("writtenBy_relation.csv", "w+", encoding="utf-8")
 article_id = 0
 
 for k in data['authors']:
-    authors = k.split(', ')  
+    split_authors = k.split(', ')  
     for a in authors:
-        print(a)
-        writtenByFile.write("%s,%s\n" % (data.loc[article_id,"id"], author.setdefault(a.lower(),)))
+        writtenByFile.write("%s,%s\n" % (data.loc[article_id,"id"], author.get(a.lower(),)))
     article_id += 1
     
 writtenByFile.close()
+print('finished making writtenBy_relation csv files')
+
+print("--- Total running time %s seconds ---" % (time.time() - start_time))
