@@ -4,7 +4,7 @@ Created on Fri Mar 20 10:30:54 2020
 
 @author: tsl19
 
-WARNING: RUNNING TIME IS VERY LONG
+WARNING: RUNNING TIME IS VERY LONG ON MIO DATA SET
 """
 
 import re
@@ -39,6 +39,7 @@ def clean_text(content):
     date9 = r"[\d]{1,2}-[\d]{1,2}-[\d]{4}" # 20-20-2020
     date_patterns = [date1, date2, date3, date4, date5, date6, date7, date8, date9]
     
+    #takes a lot of time
     for pattern in date_patterns:
         clean_text = re.sub(pattern, ' <DATE> ', clean_text)
     
@@ -76,17 +77,18 @@ def simpleEntityToCSV(filename, dictionary):
     file.close
 
 #------------------------------------------#
-data = pd.read_csv(filename)
+data = pd.read_csv(filename, encoding='utf-8')
 print('Read data')
 
 #to avoid NaNs and other nulls we set these to string '<null>'
 data = data.where(pd.notnull(data), '<null>')
 
+clean_start_time = time.time()
 #clean text
+#we clean all at once which takes n^9 running time
 for i in data['content'].index:
-    data.loc[i,'content'] = clean_text(data.loc[i,'content'])
-#we clean all at once which takes time
-print('Finished cleaning')
+  data.loc[i,'content'] = clean_text(data.loc[i,'content'])
+print('finished cleaning after {}s'.format(time.time()-clean_start_time))
 
 #define dicts
 author  = dict()
@@ -137,7 +139,7 @@ print('finished author_entity, keyword_entity, domain_entity, type_entity csv fi
 domain_id = []
 type_id = []
 for i in data['domain']: 
-    domain_id.append(domain.get(i),)
+    domain_id.append(domain.get(i))
 for j in data['type']:
     type_id.append(typ.get(j))
     
@@ -186,8 +188,8 @@ article_id = 0
 
 for k in data['authors']:
     split_authors = k.split(', ')  
-    for a in authors:
-        writtenByFile.write("%s,%s\n" % (data.loc[article_id,"id"], author.get(a.lower(),)))
+    for a in split_authors:
+        writtenByFile.write("%s,%s\n" % (data.loc[article_id,"id"], author.get(a.lower())))
     article_id += 1
     
 writtenByFile.close()
