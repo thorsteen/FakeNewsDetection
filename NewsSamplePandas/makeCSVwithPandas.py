@@ -12,9 +12,9 @@ import pandas as pd
 import time
 start_time = time.time()
 
-#filename ='news_sample.csv'
+filename ='news_sample.csv'
 #filename = '../../Data/clean-100k.csv'
-filename = '../../Data/1mio-raw.csv'
+#filename = '../../Data/1mio-raw.csv'
 
 #så man kan se mere print i terminal
 pd.set_option('display.max_rows', None)
@@ -78,16 +78,9 @@ def simpleEntityToCSV(filename, dictionary):
 #------------------------------------------#
 data = pd.read_csv(filename)
 print('Read data')
+
 #to avoid NaNs and other nulls we set these to string '<null>'
-#data = data.where(pd.notnull(data), '<null>')
-
-
-#using first column as article id
-#is wrong due to false in
-#data.iloc[:,0].is_unique
-#true in
-#data['id'].is_unique
-#which we use later on
+data = data.where(pd.notnull(data), '<null>')
 
 #clean text
 for i in data['content'].index:
@@ -147,7 +140,14 @@ for i in data['domain']:
     domain_id.append(domain.get(i),)
 for j in data['type']:
     type_id.append(typ.get(j))
+    
 
+#using first column as article id
+#is wrong due to false in
+#data.iloc[:,0].is_unique
+#true in
+#data['id'].is_unique
+#which we use later on
 #we do not need indexes and header when making csv
 article_entity = pd.concat([data['id'],
                                 data['title'].str.lower(),
