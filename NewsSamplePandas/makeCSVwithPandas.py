@@ -12,9 +12,9 @@ import pandas as pd
 import time
 start_time = time.time()
 
-filename ='news_sample.csv'
+#filename ='news_sample.csv'
 #filename = '../../Data/clean-100k.csv'
-#filename = '../../Data/1mio-raw.csv'
+filename = '../../Data/1mio-raw.csv'
 
 #så man kan se mere print i terminal
 pd.set_option('display.max_rows', None)
@@ -28,21 +28,11 @@ def clean_text(content):
     clean_text = content.lower()
     
     # Clean dates 
-    date123 = r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?|(?:[\d]{1}|[\d]{2}))(?: |. |, |/|\\|:|;|.|,)(?:[\d]{1}|[\d]{2})(?: |. |, |/|\\|:|;|.|,)(?:1\d{3}|2\d{3})" #dose the same as 1,2,3,8 and 9
-    #date1 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1, 2}), (?:1\d{3}|2\d{3})(?=\D|$)" # feb(ruary) 10, 2010
-    #date2 = r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec?). (?:[\d]{1, 2}), (?:1\d{3}|2\d{3})(?=\D|$)" # Feb. 10, 2010 
-    #date3 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1,2}) (?:1\d{3}|2\d{3})(?=\D|$)" # June 12 2016
-    #date4 = r"\b(?:[\d]{1, 2}) (?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:1\d{3}|2\d{3})(?=\D|$)" # 31 Dec 2017
-    #date5 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:1\d{3}|2\d{3})(?=\D|$)"  # July 2015
-    #date6 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1,2})(?=\D|$)"  # June 27
-    #date7 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) of (?:1\d{3}|2\d{3})(?=\D|$)" #Aug(ust) of 2014
-    #date8 = r"[\d]{1,2}/[\d]{1,2}/[\d]{4}" # 20/20/2020
-    #date9 = r"[\d]{1,2}-[\d]{1,2}-[\d]{4}" # 20-20-2020
-    date_patterns = [date123]
-    
+    date = r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?|(?:[\d]{1}|[\d]{2}))(?: |. |, |/|\\|:|;|.|,)(?:[\d]{1}|[\d]{2})(?: |. |, |/|\\|:|;|.|,)(?:1\d{3}|2\d{3})" #dose the same as 1,2,3,8 and 9
+
     #takes a lot of time
-    for pattern in date_patterns:
-        clean_text = re.sub(pattern, ' <DATE> ', clean_text)
+    #we need to use fewer patterns
+    clean_text = re.sub(date, ' <DATE> ', clean_text)
     
     # Clean email
     email1 = r'([\w0-9._-]+@[\w0-9._-]+\.[\w0-9_-]+)'
@@ -88,7 +78,7 @@ clean_start_time = time.time()
 #clean text
 #we clean all at once which takes n^9 running time
 for i in data['content'].index:
-  data.loc[i,'content'] = clean_text(data.loc[i,'content'])
+    data.loc[i,'content'] = clean_text(data.loc[i,'content'])
 print('finished cleaning after {}s'.format(time.time()-clean_start_time))
 
 #define dicts
@@ -144,9 +134,9 @@ print('finished author_entity, keyword_entity, domain_entity, type_entity csv fi
 domain_id = []
 type_id = []
 for i in data['domain']: 
-    domain_id.append(domain.get(i))
+    domain_id.append(int(domain.get(i,-1)))
 for j in data['type']:
-    type_id.append(typ.get(j))
+    type_id.append(int(typ.get(j,-1)))
     
 
 #using first column as article id
@@ -191,7 +181,7 @@ for m in data['meta_keywords']:
     m = m[2:-2]
     split_keywords = m.split('\', \'')
     for meta_keyword in split_keywords:
-        tagsFile.write("%s,%s\n" % (data.loc[article_id,"id"], keyword.get(meta_keyword.lower())))
+        tagsFile.write("%s,%s\n" % (data.loc[article_id,"id"], keyword.get(meta_keyword.lower(),-1)))
     article_id += 1
 
 tagsFile.close()
@@ -205,7 +195,7 @@ article_id = 0
 for k in data['authors']:
     split_authors = k.split(', ')  
     for a in split_authors:
-        writtenByFile.write("%s,%s\n" % (data.loc[article_id,"id"], author.get(a.lower())))
+        writtenByFile.write("%s,%s\n" % (data.loc[article_id,"id"], author.get(a.lower(),-1)))
     article_id += 1
     
 writtenByFile.close()
