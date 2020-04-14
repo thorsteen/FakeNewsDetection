@@ -12,9 +12,9 @@ import pandas as pd
 import time
 start_time = time.time()
 
-#filename ='news_sample.csv'
+filename ='news_sample.csv'
 #filename = '../../Data/clean-100k.csv'
-filename = '../../Data/1mio-raw.csv'
+#filename = '../../Data/1mio-raw.csv'
 
 #så man kan se mere print i terminal
 pd.set_option('display.max_rows', None)
@@ -28,10 +28,7 @@ def clean_text(content):
     clean_text = content.lower()
     
     # Clean dates 
-    date = r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?|(?:[\d]{1}|[\d]{2}))(?: |. |, |/|\\|:|;|.|,)(?:[\d]{1}|[\d]{2})(?: |. |, |/|\\|:|;|.|,)(?:1\d{3}|2\d{3})" #dose the same as 1,2,3,8 and 9
-
-    #takes a lot of time
-    #we need to use fewer patterns
+    date = r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?|(?:[\d]{1}|[\d]{2}))(?: |. |, |/|\\|:|;|.|,)(?:[\d]{1}|[\d]{2})(?: |. |, |/|\\|:|;|.|,)(?:1\d{3}|2\d{3})" #does the same as 1,2,3,8 and 9
     clean_text = re.sub(date, ' <DATE> ', clean_text)
     
     # Clean email
