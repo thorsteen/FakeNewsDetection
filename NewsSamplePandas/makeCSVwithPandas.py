@@ -28,16 +28,17 @@ def clean_text(content):
     clean_text = content.lower()
     
     # Clean dates 
-    date1 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1, 2}), (?:1\d{3}|2\d{3})(?=\D|$)" # feb(ruary) 10, 2010
-    date2 = r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec?). (?:[\d]{1, 2}), (?:1\d{3}|2\d{3})(?=\D|$)" # Feb. 10, 2010
-    date3 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1,2}) (?:1\d{3}|2\d{3})(?=\D|$)" # June 12 2016
-    date4 = r"\b(?:[\d]{1, 2}) (?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:1\d{3}|2\d{3})(?=\D|$)" # 31 Dec 2017
-    date5 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:1\d{3}|2\d{3})(?=\D|$)"  # July 2015
-    date6 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1,2})(?=\D|$)"  # June 27
-    date7 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) of (?:1\d{3}|2\d{3})(?=\D|$)" #Aug(ust) of 2014
-    date8 = r"[\d]{1,2}/[\d]{1,2}/[\d]{4}" # 20/20/2020
-    date9 = r"[\d]{1,2}-[\d]{1,2}-[\d]{4}" # 20-20-2020
-    date_patterns = [date1, date2, date3, date4, date5, date6, date7, date8, date9]
+    date123 = r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?|(?:[\d]{1}|[\d]{2}))(?: |. |, |/|\\|:|;|.|,)(?:[\d]{1}|[\d]{2})(?: |. |, |/|\\|:|;|.|,)(?:1\d{3}|2\d{3})" #dose the same as 1,2,3,8 and 9
+    #date1 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1, 2}), (?:1\d{3}|2\d{3})(?=\D|$)" # feb(ruary) 10, 2010
+    #date2 = r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec?). (?:[\d]{1, 2}), (?:1\d{3}|2\d{3})(?=\D|$)" # Feb. 10, 2010 
+    #date3 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1,2}) (?:1\d{3}|2\d{3})(?=\D|$)" # June 12 2016
+    #date4 = r"\b(?:[\d]{1, 2}) (?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:1\d{3}|2\d{3})(?=\D|$)" # 31 Dec 2017
+    #date5 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:1\d{3}|2\d{3})(?=\D|$)"  # July 2015
+    #date6 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) (?:[\d]{1,2})(?=\D|$)"  # June 27
+    #date7 = r"\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|(nov|dec)(?:ember)?) of (?:1\d{3}|2\d{3})(?=\D|$)" #Aug(ust) of 2014
+    #date8 = r"[\d]{1,2}/[\d]{1,2}/[\d]{4}" # 20/20/2020
+    #date9 = r"[\d]{1,2}-[\d]{1,2}-[\d]{4}" # 20-20-2020
+    date_patterns = [date123]
     
     #takes a lot of time
     for pattern in date_patterns:
@@ -107,10 +108,14 @@ for i in data['authors']:
 print('finished splitting authors and making authors list')
 
 keywords = []
+keywords.append('')
 for words in data['meta_keywords']:
-    split_keywords = re.split(r'[;,"\'\[\]]\s*', words)
-    for word in split_keywords:
-        keywords.append(word[:128]) #make sure that every keyword is no longer than 128 char
+    words = words[2:-2]
+    if words != '':
+        split_keywords = words.split('\', \'')
+        for word in split_keywords:
+            if word != '':
+                keywords.append(word[:128]) #make sure that every keyword is no longer than 128 char
 
 print('finished splitting keywords and making keywords list')
 
@@ -157,9 +162,9 @@ article_entity = pd.concat([data['id'],
                                 data['summary'].str.lower(),
                                 data['meta_description'].str.lower(),
                                 pd.DataFrame(type_id,columns=['type_id']),
-                                data['scraped_at'],
                                 data['inserted_at'],
-                                data['updated_at']],axis=1)
+                                data['updated_at'],
+                                data['scraped_at']],axis=1)
 article_entity.to_csv('article_entity.csv', index = False, header = False, sep = "^")
 
 webpage_relation = pd.concat([data['url'],data['id'],pd.DataFrame(domain_id, columns = ['domain_id'] )], axis = 1)
@@ -172,8 +177,19 @@ print('finished making article_entity webpage_relation csv files')
 tagsFile = open("tags_relation.csv", "w+", encoding="utf-8")
 article_id = 0
 
+keywords = []
+keywords.append('')
+for words in data['meta_keywords']:
+    words = words[2:-2]
+    if words != '':
+        split_keywords = words.split('\', \'')
+        for word in split_keywords:
+            if word != '':
+                keywords.append(word[:128]) #make sure that every keyword is no longer than 128 char
+
 for m in data['meta_keywords']:
-    split_keywords = re.split(r'[;,"\'\[\]]\s*', m)
+    m = m[2:-2]
+    split_keywords = m.split('\', \'')
     for meta_keyword in split_keywords:
         tagsFile.write("%s,%s\n" % (data.loc[article_id,"id"], keyword.get(meta_keyword.lower())))
     article_id += 1

@@ -1,0 +1,41 @@
+SELECT distinct domain_url 
+FROM Domain NATURAL JOIN webpage NATURAL JOIN article NATURAL JOIN typ 
+WHERE type_name = 'reliable';
+
+SELECT       author_name,
+             COUNT(author) AS value_occurrence 
+    FROM     author NATURAL JOIN written_by NATURAL JOIN article NATURAL JOIN typ
+    WHERE    type_name = 'fake'
+    GROUP BY author_name
+    ORDER BY value_occurrence DESC
+    LIMIT    3;
+
+
+SELECT article_id, meta_keywords, COUNT(*) as count
+FROM keyword natural join tags natural join article
+GROUP BY meta_keywords
+ORDER BY article_id
+HAVING count > 1;
+
+
+SELECT * FROM (
+   SELECT
+    keyword, COUNT(*)as count
+FROM
+    keyword natural join  tags natural join article
+GROUP BY
+    keyword
+ORDER BY
+     count DESC
+) AS grp
+WHERE grp.count > 1;
+
+
+SELECT A.article_id
+FROM tags A
+WHERE Exists (SELECT * 
+              FROM tags B
+              WHERE B.keyword_id = A.keyword_id)
+GROUP BY A.article_id
+HAVING count(A.keyword_id) = (SELECT count(C.keyword_id) 
+                          FROM tags C );
