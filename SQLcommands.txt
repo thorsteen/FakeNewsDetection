@@ -1,6 +1,50 @@
+
+-----------------------------------------------------------------------------------------------------
+					TASK 4
+-----------------------------------------------------------------------------------------------------
+
+CREATE MATERIALIZED VIEW
+articles_per_domain_and_type
+	(domain, typ, article_count)
+	AS (SELECT domain_url, type_name, COUNT(*)
+		FROM article NATURAL JOIN typ NATURAL JOIN webpage NATURAL JOIN domain
+		WHERE domain_url IS NOT NULL AND type_name != '<null>'
+		GROUP BY domain_url, type_name);
+
+
+select * from articles_per_domain_and_type order by domain;
+
+
+CREATE MATERIALIZED VIEW
+articles_per_author_and_type
+	(author, typ, article_count)
+	AS (SELECT author_name, type_name, COUNT(*)
+		FROM article NATURAL JOIN typ NATURAL JOIN written_by NATURAL JOIN author
+		WHERE author_name != '<null>' AND type_name != '<null>'
+		GROUP BY author_name, type_name);
+
+select * from articles_per_author_and_type order by author;
+
+CREATE MATERIALIZED VIEW
+articles_per_keyword_and_type
+	(keyword, typ, article_count)
+	AS (SELECT keyword, type_name, COUNT(*)
+		FROM article NATURAL JOIN typ NATURAL JOIN tags NATURAL JOIN keyword
+		WHERE keyword != '<null>' AND type_name != '<null>'
+		GROUP BY keyword, type_name);
+
+select * from articles_per_keyword_and_type order by keyword;
+
+-----------------------------------------------------------------------------------------------------
+					TASK 3
+-----------------------------------------------------------------------------------------------------
+
+
 SELECT distinct domain_url 
 FROM Domain NATURAL JOIN webpage NATURAL JOIN article NATURAL JOIN typ 
 WHERE type_name = 'reliable';
+
+
 
 SELECT       author_name,
              COUNT(author) AS value_occurrence 
@@ -9,6 +53,11 @@ SELECT       author_name,
     GROUP BY author_name
     ORDER BY value_occurrence DESC
     LIMIT    3;
+
+
+-----------------------------------------------------------------------------------------------------
+					FAILS
+-----------------------------------------------------------------------------------------------------
 
 
 SELECT article_id, meta_keywords, COUNT(*) as count
@@ -31,11 +80,33 @@ ORDER BY
 WHERE grp.count > 1;
 
 
-SELECT A.article_id
+SELECT A.keyword_id, A.article_id
 FROM tags A
 WHERE Exists (SELECT * 
               FROM tags B
               WHERE B.keyword_id = A.keyword_id)
-GROUP BY A.article_id
+GROUP BY A.keyword_id
 HAVING count(A.keyword_id) = (SELECT count(C.keyword_id) 
                           FROM tags C );
+
+WITH cte AS (
+SELECT * FROM (
+   SELECT
+     keyword_id, COUNT(*)
+ as count
+FROM
+    tags
+GROUP BY
+    keyword_id
+ORDER BY
+     count DESC
+) AS grp
+WHERE grp.count > 1
+)
+SELECT
+      tags.article_id,
+      cte.count
+FROM
+      cte natural join tags
+ORDER BY
+      cte.count;

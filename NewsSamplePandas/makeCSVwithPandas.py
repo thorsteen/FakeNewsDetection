@@ -13,6 +13,7 @@ import time
 start_time = time.time()
 
 filename ='news_sample.csv'
+#filename ='../../../../../../data/clean-100k.csv'
 #filename = '../../Data/clean-100k.csv'
 #filename = '../../Data/1mio-raw.csv'
 
