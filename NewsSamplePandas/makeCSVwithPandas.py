@@ -12,9 +12,9 @@ import pandas as pd
 import time
 start_time = time.time()
 
-#filename ='news_sample.csv'
-#filename ='../../../../../../data/clean-100k.csv'
-filename = '../../Data/clean-100k.csv'
+filename ='news_sample.csv'
+#filename ='../../../../../../data/clean-100k.csv' #this is where i have to store my files... :/
+#filename = '../../Data/clean-100k.csv'
 #filename = '../../Data/1mio-raw.csv'
 
 #så man kan se mere print i terminal
@@ -77,14 +77,13 @@ print('Read data')
 #to avoid NaNs and other nulls we set these to string ''
 data = data.where(pd.notnull(data), '')
 
-"""
 clean_start_time = time.time()
 #clean text
 #we clean all at once which takes n^9 running time
-for i in data['content'].index:
-    data.loc[i,'content'] = clean_text(data.loc[i,'content'])
+#for i in data['content'].index:
+#    data.loc[i,'content'] = clean_text(data.loc[i,'content'])
 print('finished cleaning after {}s'.format(time.time()-clean_start_time))
-"""
+
 #define dicts
 author  = dict()
 domain  = dict()
@@ -104,12 +103,14 @@ print('finished splitting authors and making authors list')
 keywords = []
 keywords.append('')
 for words in data['meta_keywords']:
+    splitter = words[1]
     words = words[2:-2]
     if words != '':
         #split er ændret, da det split der var før lavede fejl ved dobbelt quotation 
-        split_keywords = words.split(', ')
+        split_keywords = re.split("(?:\'|\"), (?:\'|\")", words)
         for word in split_keywords:
-            keywords.append(word[:128-1]) #make sure that every keyword is no longer than 128 char
+            if word != '':
+                keywords.append(word[:128-1].replace('\"', '\"\"')) #make sure that every keyword is no longer than 128 char
 
 print('finished splitting keywords and making keywords list')
 
@@ -173,9 +174,12 @@ article_id = 0
 
 for m in data['meta_keywords']:
     #split_keywords = re.split(r'[;,"\'\[\]]\s*', m)
+    splitter = m[1]
     m = m[2:-2]
+    split_keywords = re.split("(?:\'|\"), (?:\'|\")", m)
     split_keywords = m.split(', ')
     for meta_keyword in split_keywords:
+        meta_keyword = meta_keyword[:127].replace('\"', '\"\"')
         if meta_keyword != '':
             tagsFile.write("%s,%s\n" % (data.loc[article_id,"id"], keyword.get(meta_keyword.lower(),'')))
     article_id += 1
