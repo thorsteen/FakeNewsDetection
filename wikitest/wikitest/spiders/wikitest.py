@@ -13,7 +13,6 @@ class testSpider(scrapy.Spider):
         #yield all the article links from the start urls
         for url in start_urls:
             yield scrapy.Request( url = url, callback = self.parse )
-        print('\n YOU RAN THE RIGHT THING\n')
         
         
     #We want to follow the next page from the start urls until  we are finished entirely (at letter O)
