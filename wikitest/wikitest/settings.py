@@ -12,7 +12,7 @@
 FEED_FORMAT="csv"
 FEED_URI="wiki.csv"
 
-BOT_NAME = 'wiki'
+BOT_NAME = 'wikitest'
 
 SPIDER_MODULES = ['wikitest.spiders']
 NEWSPIDER_MODULE = 'wikitest.spiders'
