@@ -10,12 +10,16 @@ WARNING: RUNNING TIME IS VERY LONG ON MIO DATA SET
 import re
 import pandas as pd
 import time
+#import csv
 start_time = time.time()
 
-filename ='news_sample.csv'
+#filename ='news_sample.csv' #works with this data
 #filename ='../../../../../../data/clean-100k.csv' #this is where i have to store my files... :/
-#filename = '../../Data/clean-100k.csv'
-#filename = '../../Data/1mio-raw.csv'
+#filename = '../../Data/clean-100k.csv' #works with this data
+#filename = '../../Data/1mio-raw.csv' #contains difficult empty rows and other problems
+
+#following is csv file is without empty rows and made from 1mio-raw
+filename = '../../Data/500k.csv'
 
 #så man kan se mere print i terminal
 pd.set_option('display.max_rows', None)
@@ -67,12 +71,25 @@ def simpleEntityToCSV(filename, dictionary):
     file.close
 
 #------------------------------------------#
-#pandas fanger ikke alle tomme rækker på trods af filter og skip blank lines er sat til
+#might help to give datatypes beforehand to pd.read_csv
 data = pd.read_csv(filename, encoding='utf-8', skip_blank_lines=True, verbose = True, na_filter=True)
+
+#alternative way to load data. seem to give same result as pd.read_csv
+"""
+with open(filename, 'r', encoding='utf-8') as f:
+    reader = csv.reader(f)
+    headers = next(reader, None)
+    rows = []
+    for row in reader:
+        rows.append({header: value for header, value in zip(headers, row)})
+print(rows[0])
+
+data = pd.DataFrame(rows)
+"""
 print('Read data')
 
 #data.dropna(subset = ['id'], inplace = True)
-#det virker tilsyndeladende heller ikke at slette rækker med tomme ideer
+#det virker tilsyndeladende heller ikke at slette rækker med tomme ids
 
 #to avoid NaNs and other nulls we set these to string ''
 data = data.where(pd.notnull(data), '')
@@ -103,11 +120,12 @@ print('finished splitting authors and making authors list')
 keywords = []
 keywords.append('')
 for words in data['meta_keywords']:
-    splitter = words[1]
+    #splitter = words[1]
     words = words[2:-2]
     if words != '':
         #split er ændret, da det split der var før lavede fejl ved dobbelt quotation 
         split_keywords = re.split("(?:\'|\"), (?:\'|\")", words)
+        split_keywords = words.split(', ')
         for word in split_keywords:
             if word != '':
                 keywords.append(word[:128-1].replace('\"', '\"\"')) #make sure that every keyword is no longer than 128 char
@@ -121,6 +139,7 @@ putinDic(author, authors)
 putinDic(keyword,keywords)
 
 putinDic(domain,data['domain'])
+domain.update({'NULL' : -1}) #add NULL entry in dict for misses
 
 putinDic(typ,data['type'])
 print('finished making dictionaries')
@@ -139,9 +158,9 @@ print('finished author_entity, keyword_entity, domain_entity, type_entity csv fi
 domain_id = []
 type_id = []
 for i in data['domain']:
-    domain_id.append(int(domain.get(i,'')))
+    domain_id.append(int(domain.get(i,-1)))
 for j in data['type']:
-    type_id.append(int(typ.get(j,'')))
+    type_id.append(int(typ.get(j,-1)))
 
 
 #using first column as article id
@@ -162,7 +181,10 @@ article_entity = pd.concat([data['id'],
                                 data['scraped_at']],axis=1)
 article_entity.to_csv('article_entity.csv', index = False, header = False, sep = "^")
 
-webpage_relation = pd.concat([data['url'],data['id'],pd.DataFrame(domain_id, columns = ['domain_id'] )], axis = 1)
+domain_id_df = pd.DataFrame(domain_id, columns = ['domain_id'])
+
+webpage_relation = pd.concat([data['url'],data['id'], domain_id_df], axis = 1)
+
 webpage_relation.to_csv('webpage_relation.csv',index = False, header = False)
 print('finished making article_entity webpage_relation csv files')
 
@@ -174,7 +196,7 @@ article_id = 0
 
 for m in data['meta_keywords']:
     #split_keywords = re.split(r'[;,"\'\[\]]\s*', m)
-    splitter = m[1]
+    #splitter = m[1]
     m = m[2:-2]
     split_keywords = re.split("(?:\'|\"), (?:\'|\")", m)
     split_keywords = m.split(', ')
