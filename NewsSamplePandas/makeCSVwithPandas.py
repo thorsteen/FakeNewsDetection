@@ -15,11 +15,12 @@ start_time = time.time()
 
 #filename ='news_sample.csv' #works with this data
 #filename ='../../../../../../data/clean-100k.csv' #this is where i have to store my files... :/
+filename ='../../../../../../data/1mio-raw.csv'
 #filename = '../../Data/clean-100k.csv' #works with this data
 #filename = '../../Data/1mio-raw.csv' #contains difficult empty rows and other problems
 
 #following is csv file is without empty rows and made from 1mio-raw
-filename = '../../Data/500k.csv'
+#filename = '../../Data/500k.csv'
 
 #så man kan se mere print i terminal
 pd.set_option('display.max_rows', None)
@@ -125,7 +126,6 @@ for words in data['meta_keywords']:
     if words != '':
         #split er ændret, da det split der var før lavede fejl ved dobbelt quotation 
         split_keywords = re.split("(?:\'|\"), (?:\'|\")", words)
-        split_keywords = words.split(', ')
         for word in split_keywords:
             if word != '':
                 keywords.append(word[:128-1].replace('\"', '\"\"')) #make sure that every keyword is no longer than 128 char
@@ -195,15 +195,13 @@ tagsFile = open("tags_relation.csv", "w+", encoding="utf-8")
 article_id = 0
 
 for m in data['meta_keywords']:
-    #split_keywords = re.split(r'[;,"\'\[\]]\s*', m)
-    #splitter = m[1]
     m = m[2:-2]
-    split_keywords = re.split("(?:\'|\"), (?:\'|\")", m)
-    split_keywords = m.split(', ')
-    for meta_keyword in split_keywords:
-        meta_keyword = meta_keyword[:127].replace('\"', '\"\"')
-        if meta_keyword != '':
-            tagsFile.write("%s,%s\n" % (data.loc[article_id,"id"], keyword.get(meta_keyword.lower(),'')))
+    if m != '':
+        split_keywords = re.split("(?:\'|\"), (?:\'|\")", m)
+        for meta_keyword in split_keywords:
+            meta_keyword = meta_keyword[:127].replace('\"', '\"\"')
+            if meta_keyword != '':
+                tagsFile.write("%s,%s\n" % (data.loc[article_id,'id'], keyword.get(meta_keyword.lower(),'')))
     article_id += 1
 
 tagsFile.close()

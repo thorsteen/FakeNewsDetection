@@ -46,67 +46,41 @@ WHERE type_name = 'reliable';
 
 
 
-SELECT       author_name,
-             COUNT(author) AS value_occurrence 
-    FROM     author NATURAL JOIN written_by NATURAL JOIN article NATURAL JOIN typ
-    WHERE    type_name = 'fake'
-    GROUP BY author_name
-    ORDER BY value_occurrence DESC
-    LIMIT    3;
+SELECT       author_name,             COUNT(author) AS value_occurrence 
+FROM     author NATURAL JOIN written_by NATURAL JOIN article NATURAL JOIN typ
+WHERE    type_name = 'fake'
+GROUP BY author_name
+ORDER BY value_occurrence DESC
+LIMIT    3;
 
+WITH tags_s AS (SELECT * FROM tags WHERE article_id <= 1000), 
+    arts_s AS (SELECT DISTINCT article_id FROM tags_s)
 
------------------------------------------------------------------------------------------------------
-					FAILS
------------------------------------------------------------------------------------------------------
+SELECT arts1.article_id, arts2.article_id
 
+FROM arts_s arts1, arts_s arts2
 
-SELECT article_id, meta_keywords, COUNT(*) as count
-FROM keyword natural join tags natural join article
-GROUP BY meta_keywords
-ORDER BY article_id
-HAVING count > 1;
-
-
-SELECT * FROM (
-   SELECT
-    keyword, COUNT(*)as count
-FROM
-    keyword natural join  tags natural join article
-GROUP BY
-    keyword
-ORDER BY
-     count DESC
-) AS grp
-WHERE grp.count > 1;
-
-
-SELECT A.keyword_id, A.article_id
-FROM tags A
-WHERE Exists (SELECT * 
-              FROM tags B
-              WHERE B.keyword_id = A.keyword_id)
-GROUP BY A.keyword_id
-HAVING count(A.keyword_id) = (SELECT count(C.keyword_id) 
-                          FROM tags C );
-
-WITH cte AS (
-SELECT * FROM (
-   SELECT
-     keyword_id, COUNT(*)
- as count
-FROM
-    tags
-GROUP BY
-    keyword_id
-ORDER BY
-     count DESC
-) AS grp
-WHERE grp.count > 1
-)
-SELECT
-      tags.article_id,
-      cte.count
-FROM
-      cte natural join tags
-ORDER BY
-      cte.count;
+WHERE arts1.article_id < arts2.article_id
+AND 1 = ((SELECT COUNT(*)
+                FROM (
+    (
+        SELECT tags_s.keyword_id
+        FROM tags_s
+        WHERE arts1.article_id = tags_s.article_id 
+    ) INTERSECT (
+        SELECT tags_s.keyword_id
+        FROM tags_s
+        WHERE arts2.article_id = tags_s.article_id 
+        ) ) as foo
+) / (SELECT COUNT(*)
+    FROM(
+    (
+        SELECT tags_s.keyword_id
+        FROM tags_s
+        WHERE arts1.article_id = tags_s.article_id 
+    ) UNION (
+        SELECT tags_s.keyword_id
+        FROM tags_s
+        WHERE arts2.article_id = tags_s.article_id 
+    )) as bar 
+    ));
