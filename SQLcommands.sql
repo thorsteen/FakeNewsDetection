@@ -47,6 +47,8 @@ SELECT distinct domain_url
 FROM Domain NATURAL JOIN webpage NATURAL JOIN article NATURAL JOIN typ 
 WHERE type_name = 'reliable';
 
+π domain_url σ type_name = 'reliable' Domain ⨝ Webpage ⨝ Article ⨝ Typ
+
 -----------------------------------------------------------------------------------------------------
 
 WITH myTable AS (SELECT author_name, COUNT(author) AS value_occurrence 
