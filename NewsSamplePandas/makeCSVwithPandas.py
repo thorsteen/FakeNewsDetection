@@ -4,23 +4,31 @@ Created on Fri Mar 20 10:30:54 2020
 
 @author: tsl19
 
-WARNING: RUNNING TIME IS VERY LONG ON MIO DATA SET
+WARNING: RUNNING TIME IS ABOUT 25 min ON 1MIO DATA SET AND 14 min on 500k DATA SET
 """
 
 import re
 import pandas as pd
 import time
+import numpy as np
 #import csv
 start_time = time.time()
 
 #filename ='news_sample.csv' #works with this data
-#filename ='../../../../../../data/clean-100k.csv' #this is where i have to store my files... :/
-filename ='../../../../../../data/1mio-raw.csv'
+#filename ='../../../../../../data/1mio-raw.csv'
 #filename = '../../Data/clean-100k.csv' #works with this data
-#filename = '../../Data/1mio-raw.csv' #contains difficult empty rows and other problems
+#filename = '../../Data/1mio-raw.csv' # does not work yet
+"""
+1mio-raw contains difficult empty rows and other problems which may cause folling err:
+
+invalid literal for int() with base 10: 'Rover pipeline, pollution, agribusiness, 
+natural gas, nuclear, Energy Transfer Partners, Doomsday Clock'
+
+err occured after chunk 11 was done
+"""
 
 #following is csv file is without empty rows and made from 1mio-raw
-#filename = '../../Data/500k.csv'
+filename = '../../Data/500k.csv'
 
 #så man kan se mere print i terminal
 pd.set_option('display.max_rows', None)
@@ -72,8 +80,28 @@ def simpleEntityToCSV(filename, dictionary):
     file.close
 
 #------------------------------------------#
-#might help to give datatypes beforehand to pd.read_csv
-data = pd.read_csv(filename, encoding='utf-8', skip_blank_lines=True, verbose = True, na_filter=True)
+#we give datatypes beforehand and relevant cols to pd.read_csv for better performance
+datatypes = {'id': np.int32, 
+             'domain': str, 
+             'type' : str, 
+             'url' :str, 
+             'content': str, 
+             'scraped_at':str, 
+             'inserted_at':str,
+             'updated_at':str, 
+             'title':str, 
+             'authors':str, 
+             'keywords':str, 
+             'meta_keywords':str,
+             'meta_description':str, 
+             'tags':str
+             }
+cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] #to skp index, source and meta_description column
+df_chunk = pd.read_csv(filename, dtype=datatypes, encoding='utf-8', skip_blank_lines=True, 
+                   chunksize = 10000, verbose = True, na_filter=True, usecols = cols)
+
+#data = pd.read_csv(filename, encoding='utf-8', skip_blank_lines=True, verbose = True, na_filter=True)
+#print('Read data')
 
 #alternative way to load data. seem to give same result as pd.read_csv
 """
@@ -87,20 +115,29 @@ print(rows[0])
 
 data = pd.DataFrame(rows)
 """
-print('Read data')
 
 #data.dropna(subset = ['id'], inplace = True)
 #det virker tilsyndeladende heller ikke at slette rækker med tomme ids
+chunk_no = 0 #there should be 100 chunks with 1mio dataset and 10000 line chunks
+chunk_list = []
+Tclean_start_time = time.time()
+for data in df_chunk:
+    #to avoid NaNs and other nulls we set these to string ''
+    data = data.where(pd.notnull(data), '')
+    
+    clean_start_time = time.time()
+    #clean text
+    #we clean all at once which takes n^9 running time
+    for i in data['content'].index:
+        data.loc[i,'content'] = clean_text(data.loc[i,'content'])
+    chunk_list.append(data)
+    chunk_no += 1
+    print('finished cleaning chunk {} ({} pct. of total) after {}s'.format(chunk_no, (chunk_no/100)*100, time.time()-clean_start_time))
 
-#to avoid NaNs and other nulls we set these to string ''
-data = data.where(pd.notnull(data), '')
+data = pd.concat(chunk_list)
+print('finished cleaning after {}min'.format((time.time()-Tclean_start_time)/60))
 
-clean_start_time = time.time()
-#clean text
-#we clean all at once which takes n^9 running time
-#for i in data['content'].index:
-#    data.loc[i,'content'] = clean_text(data.loc[i,'content'])
-print('finished cleaning after {}s'.format(time.time()-clean_start_time))
+#data['id'] = data['id'].astype('int32') to force type
 
 #define dicts
 author  = dict()
@@ -179,20 +216,20 @@ article_entity = pd.concat([data['id'],
                                 data['inserted_at'],
                                 data['updated_at'],
                                 data['scraped_at']],axis=1)
-article_entity.to_csv('article_entity.csv', index = False, header = False, sep = "^")
+article_entity.to_csv('article_entity.csv', index = False, header = False, sep = "^", encoding='utf-8')
 
 domain_id_df = pd.DataFrame(domain_id, columns = ['domain_id'])
 
 webpage_relation = pd.concat([data['url'],data['id'], domain_id_df], axis = 1)
 
-webpage_relation.to_csv('webpage_relation.csv',index = False, header = False)
+webpage_relation.to_csv('webpage_relation.csv',index = False, header = False, encoding='utf-8')
 print('finished making article_entity webpage_relation csv files')
 
 #Pandas becomes difficult when working with undefined sizes so
 #we use file method for authors and keywords
 
 tagsFile = open("tags_relation.csv", "w+", encoding="utf-8")
-article_id = 0
+article_id1 = 0
 
 for m in data['meta_keywords']:
     m = m[2:-2]
@@ -201,8 +238,8 @@ for m in data['meta_keywords']:
         for meta_keyword in split_keywords:
             meta_keyword = meta_keyword[:127].replace('\"', '\"\"')
             if meta_keyword != '':
-                tagsFile.write("%s,%s\n" % (data.loc[article_id,'id'], keyword.get(meta_keyword.lower(),'')))
-    article_id += 1
+                tagsFile.write("%s,%s\n" % (data.loc[article_id1,'id'], keyword.get(meta_keyword.lower(),'')))
+    article_id1 += 1
 
 tagsFile.close()
 
@@ -210,15 +247,15 @@ print('finished making article_entity, webpage_relation csv files')
 
 
 writtenByFile = open("writtenBy_relation.csv", "w+", encoding="utf-8")
-article_id = 0
+article_id2 = 0
 
 for k in data['authors']:
     split_authors = k.split(', ')
     for a in split_authors:
-        writtenByFile.write("%s,%s\n" % (data.loc[article_id,"id"], author.get(a.lower(),'')))
-    article_id += 1
+        writtenByFile.write("%s,%s\n" % (data.loc[article_id2,"id"], author.get(a.lower(),'')))
+    article_id2 += 1
 
 writtenByFile.close()
 print('finished making writtenBy_relation csv files')
 
-print("--- Total running time %s seconds ---" % (time.time() - start_time))
+print("--- Total running time %s minutes ---" % (time.time() - start_time)/60)
