@@ -17,7 +17,7 @@ start_time = time.time()
 #filename ='news_sample.csv' #works with this data
 #filename ='../../../../../../data/1mio-raw.csv'
 #filename = '../../Data/clean-100k.csv' #works with this data
-#filename = '../../Data/1mio-raw.csv' # does not work yet
+filename = '../../Data/1mio-raw.csv' # does not work yet
 """
 1mio-raw contains difficult empty rows and other problems which may cause folling err:
 
@@ -28,7 +28,7 @@ err occured after chunk 11 was done
 """
 
 #following is csv file is without empty rows and made from 1mio-raw
-filename = '../../Data/500k.csv'
+#filename = '../../Data/500k.csv'
 
 #så man kan se mere print i terminal
 pd.set_option('display.max_rows', None)
@@ -81,6 +81,7 @@ def simpleEntityToCSV(filename, dictionary):
 
 #------------------------------------------#
 #we give datatypes beforehand and relevant cols to pd.read_csv for better performance
+"""
 datatypes = {'id': np.int32, 
              'domain': str, 
              'type' : str, 
@@ -96,9 +97,10 @@ datatypes = {'id': np.int32,
              'meta_description':str, 
              'tags':str
              }
+"""
 cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] #to skp index, source and meta_description column
-df_chunk = pd.read_csv(filename, dtype=datatypes, encoding='utf-8', skip_blank_lines=True, 
-                   chunksize = 10000, verbose = True, na_filter=True, usecols = cols)
+df_chunk = pd.read_csv(filename, encoding='utf-8', skip_blank_lines=True, error_bad_lines = False, skiprows = list(range(1,100000)),
+                   chunksize = 10000, verbose = True, na_filter=True, usecols = cols) #dtype=datatypes
 
 #data = pd.read_csv(filename, encoding='utf-8', skip_blank_lines=True, verbose = True, na_filter=True)
 #print('Read data')
@@ -116,18 +118,21 @@ print(rows[0])
 data = pd.DataFrame(rows)
 """
 
-#data.dropna(subset = ['id'], inplace = True)
-#det virker tilsyndeladende heller ikke at slette rækker med tomme ids
 chunk_no = 0 #there should be 100 chunks with 1mio dataset and 10000 line chunks
 chunk_list = []
 Tclean_start_time = time.time()
 for data in df_chunk:
+    
+    #data.dropna(subset = ['id'], inplace = True) #drops rows with NA ids and creates as a key error later on
+    #data["id"].map(type) != int #returns ids as indexes and bools from type() as values
+    data["id"].apply(pd.to_numeric, errors='coerce').dropna().astype(int)
+    
     #to avoid NaNs and other nulls we set these to string ''
     data = data.where(pd.notnull(data), '')
     
     clean_start_time = time.time()
     #clean text
-    #we clean all at once which takes n^9 running time
+    #we clean all at once with regex which results in a very long running time 
     for i in data['content'].index:
         data.loc[i,'content'] = clean_text(data.loc[i,'content'])
     chunk_list.append(data)
@@ -137,7 +142,7 @@ for data in df_chunk:
 data = pd.concat(chunk_list)
 print('finished cleaning after {}min'.format((time.time()-Tclean_start_time)/60))
 
-#data['id'] = data['id'].astype('int32') to force type
+
 
 #define dicts
 author  = dict()
@@ -258,4 +263,4 @@ for k in data['authors']:
 writtenByFile.close()
 print('finished making writtenBy_relation csv files')
 
-print("--- Total running time %s minutes ---" % (time.time() - start_time)/60)
+print("--- Total running time {} minutes ---".format((time.time() - start_time)/60))
