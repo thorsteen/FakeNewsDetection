@@ -18,6 +18,10 @@ import nltk
 import itertools
 #from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn import metrics
+from sklearn.naive_bayes import MultinomialNB
+
 
 filename ='news_sample.csv' #works with this data
 
@@ -112,10 +116,14 @@ for term_id, weight in sorted_tfidf_weights[:10]:
 
 """
 We try out prediction with sklearn SVM classifier on a train and test dataset from raw data
-
+"""
 
 clf = LinearSVC(random_state=0)
 
+
+"""
+need to format input properly
+"""
 #make labels binary, either fake or not fake
 def binLabels(liste):
     labels = []
@@ -128,7 +136,46 @@ def binLabels(liste):
 
 labels = binLabels(data['type'])
 
-X_train, X_test, y_train, y_test = train_test_split(corpus, labels, test_size=0.33)
+tfidf_vectorizer = TfidfVectorizer(stop_words="english", max_df=0.7)
 
-need to format input properly
+X_train, X_test, y_train, y_test = train_test_split(data['content'], labels, test_size=0.33) #maybe should specify a random state
+
+tfidf_train = tfidf_vectorizer.fit_transform(X_train)
+
+tfidf_test = tfidf_vectorizer.transform(X_test)
+
+print("the first 10 features")
+print(tfidf_vectorizer.get_feature_names()[:10])
+print("vectors")
+print(tfidf_train.A[:5])
+
+
+# We create the TfidfVectorizer DataFrame: tfidf_df
+tfidf_df = pd.DataFrame(tfidf_train.A, columns=tfidf_vectorizer.get_feature_names())
+
+print("head of tfidf_df")
+print(tfidf_df.head())
+
 """
+we begin predicitnig with Naive Bayes for starters
+"""
+
+
+# Instantiate a Multinomial Naive Bayes classifier: nb_classifier
+nb_classifier = MultinomialNB()
+
+# Fit the classifier to the training data
+nb_classifier.fit(tfidf_train, y_train)
+
+# Create the predicted tags: pred
+pred = nb_classifier.predict(tfidf_test)
+print("predictions (0 = fake, 1 = not fake, from naive bayes callisifier")
+print(pred)
+
+print("accuracy score")
+score = metrics.accuracy_score(y_test,pred)
+print(score)
+
+print("confusion matrix")
+cm = metrics.confusion_matrix(y_test, pred, labels=[0,1])
+print(cm)
