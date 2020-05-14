@@ -7,12 +7,12 @@ Created on Thu May  7 14:53:45 2020
 
 
 import pandas as pd
-from collections import Counter
+#from collections import Counter
 from collections import defaultdict
 from gensim.models.tfidfmodel import TfidfModel
 from gensim.corpora.dictionary import Dictionary
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import stopwords
+#from nltk.stem import WordNetLemmatizer
+#from nltk.corpus import stopwords
 from sklearn.svm import LinearSVC
 import nltk
 import itertools
@@ -21,7 +21,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn import metrics
 from sklearn.naive_bayes import MultinomialNB
-
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 filename ='news_sample.csv' #works with this data
 
@@ -115,15 +116,9 @@ for term_id, weight in sorted_tfidf_weights[:10]:
     print(dictionary.get(term_id), weight)
 
 """
-We try out prediction with sklearn SVM classifier on a train and test dataset from raw data
+We need to format our tfidf and labels
 """
 
-clf = LinearSVC(random_state=0)
-
-
-"""
-need to format input properly
-"""
 #make labels binary, either fake or not fake
 def binLabels(liste):
     labels = []
@@ -157,9 +152,29 @@ print("head of tfidf_df")
 print(tfidf_df.head())
 
 """
-we begin predicitnig with Naive Bayes for starters
+we begin predicitnig with a linear SVM
 """
+SVC_clf = LinearSVC(random_state=0)
 
+# Fit the classifier to the training data
+SVC_clf.fit(tfidf_train, y_train)
+
+# Create the predicted tags: pred
+SVC_pred = SVC_clf.predict(tfidf_test)
+print("predictions (0 = fake, 1 = not fake, from linear SVM classifier")
+print(SVC_pred)
+
+print("linear SVM classifier accuracy score")
+SVC_score = metrics.accuracy_score(y_test,SVC_pred)
+print(SVC_score)
+
+print("linear SVM classifier confusion matrix")
+cm1 = metrics.confusion_matrix(y_test, SVC_pred, labels=[0,1])
+print(cm1)
+
+"""
+Then Naive Bayes for seconds
+"""
 
 # Instantiate a Multinomial Naive Bayes classifier: nb_classifier
 nb_classifier = MultinomialNB()
@@ -168,14 +183,63 @@ nb_classifier = MultinomialNB()
 nb_classifier.fit(tfidf_train, y_train)
 
 # Create the predicted tags: pred
-pred = nb_classifier.predict(tfidf_test)
-print("predictions (0 = fake, 1 = not fake, from naive bayes callisifier")
-print(pred)
+nb_pred = nb_classifier.predict(tfidf_test)
+print("predictions (0 = fake, 1 = not fake, from naive bayes classifier")
+print(nb_pred)
 
-print("accuracy score")
-score = metrics.accuracy_score(y_test,pred)
-print(score)
+print("naive bayes classifier accuracy score")
+nb_score = metrics.accuracy_score(y_test,nb_pred)
+print(nb_score)
 
-print("confusion matrix")
-cm = metrics.confusion_matrix(y_test, pred, labels=[0,1])
-print(cm)
+print("naive bayes classifier confusion matrix")
+cm2 = metrics.confusion_matrix(y_test, nb_pred, labels=[0,1])
+print(cm2)
+
+"""
+We then use a K nearst neighboor classifier
+"""
+KNN_clf = KNeighborsClassifier(n_neighbors = 5, weights = "uniform" )
+
+KNN_clf.fit(tfidf_train, y_train)
+KNN_pred = KNN_clf.predict(tfidf_test)
+
+print("predictions (0 = fake, 1 = not fake, from a K nearst neighboor classifier")
+print(KNN_pred)
+
+print("K nearst neighboor classifier accuracy score")
+KNN_score = metrics.accuracy_score(y_test,KNN_pred)
+print(KNN_score)
+
+print(" K nearst neighboor classifier confusion matrix")
+cm3 = metrics.confusion_matrix(y_test, KNN_pred, labels=[0,1])
+print(cm3)
+
+
+"""
+Lastly we try a Descision tree out
+"""
+tree_clf = DecisionTreeClassifier("gini")
+
+# Fit the classifier to the training data
+tree_clf.fit(tfidf_train, y_train)
+
+# Create the predicted tags: pred
+tree_pred = tree_clf.predict(tfidf_test)
+print("predictions (0 = fake, 1 = not fake, from Descision tree callisifier")
+print(tree_pred)
+
+print("Descision tree accuracy score")
+tree_score = metrics.accuracy_score(y_test,tree_pred)
+print(tree_score)
+
+print("Descision tree confusion matrix")
+cm4 = metrics.confusion_matrix(y_test, tree_pred, labels=[0,1])
+print(cm4)
+
+"""
+results on News Sample
+--------------
+Descision tree classifier has the best acc 93 pct.
+Naive Bayes has the lowect acc with 62 pct.
+
+"""
