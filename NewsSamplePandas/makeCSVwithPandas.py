@@ -82,42 +82,17 @@ def simpleEntityToCSV(filename, dictionary):
             file.write("%s,%s\n" % (str(item[1]), str(item[0])))
     file.close
 
+#------------------------------------------#
+#reading data in
+chunk_size = 10000
+cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] #to skp index, source and meta_description column
+df_chunk = pd.read_csv(filename, encoding='utf-8', skip_blank_lines=True, error_bad_lines = False,
+                   chunksize = chunk_size, verbose = True, na_filter=True, usecols = cols) #dtype=datatypes skiprows = list(range(1,100000))
 
-# ------------------------------------------#
-# we give datatypes beforehand and relevant cols to pd.read_csv for better performance
-"""
-datatypes = {'id': np.int32, 
-             'domain': str, 
-             'type' : str, 
-             'url' :str, 
-             'content': str, 
-             'scraped_at':str, 
-             'inserted_at':str,
-             'updated_at':str, 
-             'title':str, 
-             'authors':str, 
-             'keywords':str, 
-             'meta_keywords':str,
-             'meta_description':str, 
-             'tags':str
-             }
-"""
-cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-        15]  #to skp index, source and meta_description column
-df_chunk = pd.read_csv(filename,
-                       encoding='utf-8',
-                       skip_blank_lines=True,
-                       error_bad_lines=False,
-                       skiprows=list(range(1, 100000)),
-                       chunksize=10000,
-                       verbose=True,
-                       na_filter=True,
-                       usecols=cols)  #dtype=datatypes
+#data = pd.read_csv(filename, encoding='utf-8', skip_blank_lines=True, verbose = True, na_filter=True)
+print('Read data')
 
-# data = pd.read_csv(filename, encoding='utf-8', skip_blank_lines=True, verbose = True, na_filter=True)
-# print('Read data')
-
-# alternative way to load data. seem to give same result as pd.read_csv
+#alternative way to load data. seem to give same result as pd.read_csv
 """
 with open(filename, 'r', encoding='utf-8') as f:
     reader = csv.reader(f)
@@ -129,19 +104,36 @@ print(rows[0])
 
 data = pd.DataFrame(rows)
 """
+#to fill na values correctly with pd.fillna
+na_fill = {'id': -1, 
+             'domain': '', 
+             'type' : '', 
+             'url' : '', 
+             'content': '', 
+             'scraped_at':'', 
+             'inserted_at':'',
+             'updated_at':'', 
+             'title':'', 
+             'authors':'', 
+             'keywords':'', 
+             'meta_keywords': '',
+             'meta_description':'', 
+             'tags':'',
+             'summary':''
+             }
 
-chunk_no = 0  # there should be 100 chunks with 1mio dataset and 10000 line chunks
+chunk_no = 0
 chunk_list = []
 Tclean_start_time = time.time()
 for data in df_chunk:
-
-    # data.dropna(subset = ['id'], inplace = True) #drops rows with NA ids and creates as a key error later on
-    # data["id"].map(type) != int #returns ids as indexes and bools from type() as values
-    data["id"].apply(pd.to_numeric, errors='coerce').dropna().astype(int)
-
-    # to avoid NaNs and other nulls we set these to string ''
-    data = data.where(pd.notnull(data), '')
-
+    
+    #data.dropna(subset = ['id'], inplace = True) #drops rows with NA ids and creates as a key error later on
+    #data["id"].map(type) != int #returns ids as indexes and bools from type() as values
+    data["id"] = pd.to_numeric(data["id"], errors = "coerce", downcast = "integer")
+    data.fillna(value = na_fill, axis = 0, inplace = True)
+    #to avoid NaNs and other nulls we set these to string ''
+    #data = data.where(pd.notnull(data), '') 
+    
     clean_start_time = time.time()
     # clean text
     # we clean all at once with regex which results in a very long running time
@@ -149,9 +141,9 @@ for data in df_chunk:
         data.loc[i, 'content'] = clean_text(data.loc[i, 'content'])
     chunk_list.append(data)
     chunk_no += 1
-    print('finished cleaning chunk {} ({} pct. of total) after {}s'.format(
-        chunk_no, (chunk_no / 100) * 100,
-        time.time() - clean_start_time))
+
+    print('finished cleaning chunk {} ({} pct. of total) after {}s'.format(chunk_no, (chunk_no/(len(data)/chunk_size))*100, time.time()-clean_start_time))
+
 
 data = pd.concat(chunk_list)
 print('finished cleaning after {}min'.format(
