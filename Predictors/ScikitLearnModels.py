@@ -8,7 +8,7 @@ from sklearn.svm import LinearSVC
 import psycopg2
 import nltk
 import pandas as pd
-
+import pickle
 
 #cleaned database data
 #data = pd.read_csv("article_entity.csv", skip_blank_lines=False, verbose = True, na_filter=False, names = ['content','type_id'], usecols = [1,3??])
@@ -20,7 +20,6 @@ clean_query = pd.read_sql_query(
 '''
 SELECT content, type_id
 FROM article
-LIMIT 100000;
 ''',
 conn)
 
@@ -28,7 +27,7 @@ content_type = pd.DataFrame(clean_query, columns=['content','type_id'])
 
 conn.close()
 print("read data")
-content = content_type.loc[:,'content'].astype(str)
+content = pd.DataFrame(content_type.loc[:,'content'].astype(str))
 
 
 #make labels binary, either fake or not fake
@@ -43,14 +42,25 @@ def binLabels(liste):
     return labels
 
 
-
 #labels = binLabels(data['type'])
 labels = binLabels(content_type['type_id'])
 print("made labels")
+
+content['labels']=labels
+
+"""
+We make sure there is a 50/50 disbrution of fake and not fake articles
+With 500k dataset this returns aprox. 275k articles
+"""
+g = content.groupby('labels')
+g.apply(lambda x: x.sample(g.size().min()).reset_index(drop=True))
+
+content = pd.DataFrame(g.apply(lambda x: x.sample(g.size().min()).reset_index(drop=True)))
+
 articles = []
 
 for i in range(len(content)):
-    tokens = nltk.word_tokenize(content[i])
+    tokens = nltk.word_tokenize(content.iloc[i,0])
     lower_tokens = [t.lower() for t in tokens]
     alpha_only = [t for t in lower_tokens if t.isalpha()]
     articles.append(alpha_only)
@@ -59,15 +69,28 @@ print("tokenized article content")
 
 """
 We need to format our tfidf and labels (might be an idea to pickle aslo)
+
 """
 
 tfidf_vectorizer = TfidfVectorizer(stop_words="english", max_df=0.7)
 
-X_train, X_test, y_train, y_test = train_test_split(content, labels, test_size=0.33) #maybe should specify a random state
+X_train, X_test, y_train, y_test = train_test_split(content['content'], content['labels'], test_size=0.33) #maybe should specify a random state
 
 tfidf_train = tfidf_vectorizer.fit_transform(X_train)
 
 tfidf_test = tfidf_vectorizer.transform(X_test)
+
+
+"""
+#from 500k dataset
+#aprox 275 k articles 50/50
+
+tfidf_train = pickle.load(tfidf_train_vectors)
+tfidf_test = pickle.load(tfidf_test_vectors)
+y_train = pickle.load(train_labels)
+y_test = pickle.load(test_labels)
+
+"""
 
 """
 we begin predicitnig with a linear SVM
@@ -251,4 +274,33 @@ naive bayes classifier test confusion matrix
  [ 3077   132]]
 
 results are too high, might be because fake and not fake articles in dataset are unbalanced
+
+results on 275.000 50/50 from fknew database 
+-----------------------------------------
+1.
+linear SVM classifier test accuracy score
+0.8804939744396947
+SVM train accuracy score
+0.9653324483278293
+linear SVM classifier test confusion matrix
+[[39023  6451]
+ [ 4368 40689]]
+2.
+Descision tree test accuracy score
+0.8234969237056919
+Descision tree train accuracy score
+0.9987486602503768
+Descision tree test confusion matrix
+[[37238  8236]
+ [ 7743 37314]]
+3.
+naive bayes classifier test accuracy score
+0.8074803106118347
+NB train accuracy score
+0.8278972595659483
+naive bayes classifier test confusion matrix
+[[31427 14047]
+ [ 3382 41675]]
+4.
+KNN... Unable to allocate 769. MiB for an array with shape (100810154,) and data type float64...
 """
