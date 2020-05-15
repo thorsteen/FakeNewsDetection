@@ -1,0 +1,4 @@
+tfidf_train_vectors filter=lfs diff=lfs merge=lfs -text
+tfidf_test_vectors filter=lfs diff=lfs merge=lfs -text
+train_labels filter=lfs diff=lfs merge=lfs -text
+test_labels filter=lfs diff=lfs merge=lfs -text
