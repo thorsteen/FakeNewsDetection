@@ -63,12 +63,12 @@ CREATE TABLE Written_by (
 
 SET CLIENT_ENCODING TO 'utf8';
 
-\copy keyword       from 'keyword_entity.csv'       delimiter','csv;
-\copy author        from 'author_entity.csv'        delimiter','csv;
-\copy typ           from 'type_entity.csv'          delimiter','csv;
-\copy domain        from 'domain_entity.csv'        delimiter','csv;
-\copy article       from 'article_entity1.csv'       delimiter'^'csv;
-\copy article       from 'article_entity2.csv'       delimiter'^'csv;
-\copy tags          from 'tags_relation.csv'        delimiter','csv;
-\copy written_by    from 'writtenBy_relation.csv'   delimiter','csv;
-\copy webpage       from 'webpage_relation.csv'     delimiter','csv;
+\copy keyword       from 'keyword_entity.csv'       delimiter'^'csv;
+\copy author        from 'author_entity.csv'        delimiter'^'csv;
+\copy typ           from 'type_entity.csv'          delimiter'^'csv;
+\copy domain        from 'domain_entity.csv'        delimiter'^'csv;
+\copy article       from 'article_entity1.csv'      delimiter'^'csv;
+\copy article       from 'article_entity2.csv'      delimiter'^'csv;
+\copy tags          from 'tags_relation.csv'        delimiter'^'csv;
+\copy written_by    from 'writtenBy_relation.csv'   delimiter'^'csv;
+\copy webpage       from 'webpage_relation.csv'     delimiter'^'csv;

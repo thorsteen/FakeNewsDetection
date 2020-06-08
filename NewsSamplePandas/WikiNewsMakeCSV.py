@@ -6,7 +6,6 @@ import datetime
 from cleantext import clean
 
 inputPath = '../wikitest/'
-# inputPath = '../../Data/'
 
 outputPath = '../../../../../../data/wikiOutput/'
 # outputPath = '../../Data/'
