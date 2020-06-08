@@ -95,7 +95,7 @@ def isNaN(string):
 
 # ------------------------------------------#
 # reading data in
-chunk_size = 10000
+chunk_size = 100000
 df_chunk = pd.read_csv(
     filename,
     encoding='utf-8',
@@ -202,7 +202,7 @@ for chunk in df_chunk:
 
         res = "{}^{}^{}^{}^{}\n".format(article_ID, title, content, type_id,
                                         scraped_at)
-        if chunk_no < 50:
+        if chunk_no < 5:
             article_entity1 = open(outputPath + "article_entity1.csv",
                                    "a+",
                                    encoding="utf-8")
