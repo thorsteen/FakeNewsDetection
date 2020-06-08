@@ -5,14 +5,15 @@ import pandas as pd
 import datetime
 from cleantext import clean
 
-inputPath = '../../../../../../data/input/'
+inputPath = '../wikitest/'
 # inputPath = '../../Data/'
 
-outputPath = '../../../../../../data/fakeOutput/'
+outputPath = '../../../../../../data/wikiOutput/'
 # outputPath = '../../Data/'
 
 # filename ='news_sample.csv' #works with this data
-filename = '1mio-raw.csv'
+# filename = '1mio-raw.csv'
+filename = 'wiki.csv'
 # filename = '../../Data/clean-100k.csv' #works with this data
 # filename = '../../Data/1mio-raw.csv'  # does not work yet
 
@@ -96,8 +97,6 @@ def isNaN(string):
 # ------------------------------------------#
 # reading data in
 chunk_size = 10000
-cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-        15]  # to skp index, source and meta_description column
 df_chunk = pd.read_csv(
     filename,
     encoding='utf-8',
@@ -105,23 +104,22 @@ df_chunk = pd.read_csv(
     error_bad_lines=False,
     chunksize=chunk_size,
     verbose=True,
-    na_filter=True,
-    usecols=cols)  # dtype=datatypes skiprows = list(range(1,100000))
+    na_filter=True)  # dtype=datatypes skiprows = list(range(1,100000))
 
 # clear files that are used for appending
 clearFile(outputPath + "tags_relation.csv")
-clearFile(outputPath + "writtenBy_relation.csv")
+clearFile(outputPath + "sourcedBy_relation.csv")
 clearFile(outputPath + "article_entity1.csv")
 clearFile(outputPath + "article_entity2.csv")
 
 # define dicts
-author = dict()
+source = dict()
 domain = dict()
 typ = dict()
 keyword = dict()
 
 # Define IDS
-author_ID = 0
+source_ID = 0
 domain_ID = 0
 type_ID = 0
 keyword_ID = 0
@@ -132,27 +130,28 @@ chunk_no = 0
 
 for chunk in df_chunk:
 
-    authorList = []
-    meta_keywordList = []
+    sourceList = []
+    keywordList = []
     domainList = []
     typeList = []
 
     for index, row in chunk.iterrows():
 
-        authors = row['authors']
-        if (not isNaN(authors)):
-            authors = authors.split(", ")
-            for a in authors:
-                authorList.append(a)
+        sources = row['sources']
+        if (not isNaN(sources)):
+            sources = sources[2:-2]
+            sources = sources.split("\", \"")
+            for a in sources:
+                sourceList.append(a)
 
-        keywords = row['meta_keywords']
+        keywords = row['keywords']
         if (not isNaN(keywords)):
             keywords = keywords[2:-2]
             if keywords != '':
                 split_keywords = re.split("(?:\'|\"), (?:\'|\")", keywords)
                 for word in split_keywords:
                     if word != '':
-                        meta_keywordList.append(word[:128 - 1].replace(
+                        keywordList.append(word[:128 - 1].replace(
                             '\"', '\"\"'))
 
         domains = row['domain']
@@ -163,9 +162,9 @@ for chunk in df_chunk:
         if (not isNaN(types)):
             typeList.append(types[:64 - 1])
 
-    author_ID = putinDic(author, authorList, author_ID)
+    source_ID = putinDic(source, sourceList, source_ID)
 
-    keyword_ID = putinDic(keyword, meta_keywordList, keyword_ID)
+    keyword_ID = putinDic(keyword, keywordList, keyword_ID)
 
     domain_ID = putinDic(domain, domainList, domain_ID)
 
@@ -191,18 +190,6 @@ for chunk in df_chunk:
         else:
             content = "NULL"
 
-        summary = row['summary']
-        if (summary and (not isNaN(summary))):
-            summary = clean_text(summary)
-        else:
-            summary = "NULL"
-
-        meta_description = row['meta_description']
-        if (meta_description and (not isNaN(meta_description))):
-            meta_description = clean_text(meta_description)
-        else:
-            meta_description = "NULL"
-
         types = row['type']
         if ((not isNaN(types)) and (len(types) <= 64)):
             type_id = typ[types]
@@ -211,15 +198,11 @@ for chunk in df_chunk:
 
         scraped_at = row['scraped_at'] if (isNaN(
             row['scraped_at'])) else datetime.datetime(1000, 1, 1)
-        inserted_at = row['inserted_at'] if (isNaN(
-            row['inserted_at'])) else datetime.datetime(1000, 1, 1)
-        updated_at = row['updated_at'] if (isNaN(
-            row['updated_at'])) else datetime.datetime(1000, 1, 1)
+        date = row['date'] if (isNaN(row['date'])) else datetime.datetime(
+            1000, 1, 1)
 
-        res = "{}^{}^{}^{}^{}^{}^{}^{}^{}\n".format(article_ID, title, content,
-                                                    summary, meta_description,
-                                                    type_id, scraped_at,
-                                                    inserted_at, updated_at)
+        res = "{}^{}^{}^{}^{}\n".format(article_ID, title, content, type_id,
+                                        scraped_at)
         if chunk_no < 50:
             article_entity1 = open(outputPath + "article_entity1.csv",
                                    "a+",
@@ -259,7 +242,7 @@ for chunk in df_chunk:
                         "a+",
                         encoding="utf-8")
 
-        keywords = row['meta_keywords']
+        keywords = row['keywords']
         if (not isNaN(keywords)):
             keywords = keywords[2:-2]
             if keywords != '':
@@ -273,18 +256,19 @@ for chunk in df_chunk:
 
         tagsFile.close()
 
-        writtenByFile = open(outputPath + "writtenBy_relation.csv",
+        sourcedByFile = open(outputPath + "sourcedBy_relation.csv",
                              "a+",
                              encoding="utf-8")
 
-        authors = row['authors']
-        if (not isNaN(authors)):
-            authors = authors.split(", ")
-            for a in authors:
-                writtenByFile.write("{}^{}\n".format(article_ID,
-                                                     author[a.lower()]))
+        sources = row['sources']
+        if (not isNaN(sources)):
+            sources = sources[2:-2]
+            sources = sources.split("\", \"")
+            for a in sources:
+                sourcedByFile.write("{}^{}\n".format(article_ID,
+                                                     source[a.lower()]))
 
-        writtenByFile.close()
+        sourcedByFile.close()
 
         article_ID += 1
 
@@ -298,7 +282,7 @@ for chunk in df_chunk:
     print(" ===============================\n")
 
 # use create csv files for simple entities, ids created with dicts
-simpleEntityToCSV(outputPath + "author_entity.csv", author)
+simpleEntityToCSV(outputPath + "source_entity.csv", source)
 simpleEntityToCSV(outputPath + "keyword_entity.csv", keyword)
 simpleEntityToCSV(outputPath + "domain_entity.csv", domain)
 simpleEntityToCSV(outputPath + "type_entity.csv", typ)
