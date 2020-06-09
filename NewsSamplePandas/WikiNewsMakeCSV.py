@@ -190,13 +190,14 @@ for chunk in df_chunk:
             content = "NULL"
 
         types = row['type']
-        if ((not isNaN(types)) and (len(types) <= 64)):
-            type_id = typ[types]
+        if (not isNaN(types)):
+            type_id = typ[types[:64 - 1]]
         else:
             type_id = 0
 
         scraped_at = row['scraped_at'] if (isNaN(
             row['scraped_at'])) else datetime.datetime(1000, 1, 1)
+
         date = row['date'] if (isNaN(row['date'])) else datetime.datetime(
             1000, 1, 1)
 
@@ -215,7 +216,7 @@ for chunk in df_chunk:
             article_entity2.write(res)
             article_entity2.close()
 
-        thisDomain = row['domain']
+        thisDomain = row['domain'][:64 - 1]
         url = row['url']
         if ((not isNaN(url)) and (not isNaN(thisDomain)) and (len(url) <= 1024)
                 and (len(thisDomain) <= 1024)):

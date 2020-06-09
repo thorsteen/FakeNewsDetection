@@ -64,7 +64,7 @@ def putinDic(dictionary, liste, ID):
     liste = list(set(liste))
     liste.sort()
     for j in range(len(liste)):
-        info = str(liste[j]).lower()
+        info = str(liste[j])
         if info not in dictionary:
             dictionary[info] = int(ID)
             ID += 1
@@ -74,8 +74,7 @@ def putinDic(dictionary, liste, ID):
 def simpleEntityToCSV(filename, dictionary):
     file = open(filename, "w+", encoding="utf-8")
     for item in dictionary.items():
-        if item[1] != '':
-            file.write("%s,%s\n" % (str(item[1]), str(item[0])))
+        file.write("%s^%s\n" % (str(item[1]), str(item[0])))
     file.close
 
 
@@ -132,24 +131,26 @@ for chunk in df_chunk:
         if (not isNaN(authors)):
             authors = authors.split(", ")
             for a in authors:
-                authorList.append(a)
+                if (len(a) <= 64):
+                    authorList.append(a)
 
         keywords = row['meta_keywords']
         if (not isNaN(keywords)):
             keywords = keywords[2:-2]
-            if keywords != '':
-                split_keywords = re.split("(?:\'|\"), (?:\'|\")", keywords)
-                for word in split_keywords:
-                    meta_keywordList.append(word[:128 - 1].replace(
-                        '\"', '\"\"'))
+            split_keywords = re.split("(?:\'|\"), (?:\'|\")", keywords)
+            for word in split_keywords:
+                if (len(word) <= 128):
+                    meta_keywordList.append(word.replace("\'", ""))
 
-        domains = row['domain']
-        if (not isNaN(domains)):
-            domainList.append(domains)
+        thisDomain = row['domain']
+        if (not isNaN(thisDomain)):
+            if (len(thisDomain) <= 1024):
+                domainList.append(thisDomain)
 
-        types = row['type']
-        if (not isNaN(types)):
-            typeList.append(types)
+        thisType = row['type']
+        if (not isNaN(thisType)):
+            if (len(thisType) <= 64):
+                typeList.append(thisType)
 
     author_ID = putinDic(author, authorList, author_ID)
 
@@ -187,22 +188,22 @@ for chunk in df_chunk:
         else:
             meta_description = "NULL"
 
-        types = row['type']
-        if ((not isNaN(types)) and (len(types) <= 64)):
-            type_id = typ[types]
+        thisType = row['type']
+        if (not isNaN(thisType) and (len(thisType) <= 64)):
+            type_id = typ[thisType]
         else:
             type_id = 0
 
-        scraped_at = row['scraped_at'] if (isNaN(
-            row['scraped_at'])) else datetime.datetime(1000, 1, 1)
+        scraped_at = row['scraped_at'] if (
+            not isNaN(row['scraped_at'])) else datetime.datetime(1000, 1, 1)
 
-        inserted_at = row['inserted_at'] if (isNaN(
-            row['inserted_at'])) else datetime.datetime(1000, 1, 1)
+        inserted_at = row['inserted_at'] if (
+            not isNaN(row['inserted_at'])) else datetime.datetime(1000, 1, 1)
 
-        updated_at = row['updated_at'] if (isNaN(
-            row['updated_at'])) else datetime.datetime(1000, 1, 1)
+        updated_at = row['updated_at'] if (
+            not isNaN(row['updated_at'])) else datetime.datetime(1000, 1, 1)
 
-        res = ("%s^\"%s\"^\"%s\"^\"%s\"^\"%s\"^%s^%s^%s^%s\n" %
+        res = ("%s^%s^%s^%s^%s^%s^%s^%s^%s\n" %
                (article_ID, title, content, summary, meta_description, type_id,
                 scraped_at, inserted_at, updated_at))
 
@@ -211,30 +212,31 @@ for chunk in df_chunk:
         else:
             articleEntity2File.write(res)
 
-        thisDomain = str(row['domain']).lower()
+        thisDomain = row['domain']
         url = row['url']
 
         if ((not isNaN(url)) and (not isNaN(thisDomain)) and (len(url) <= 1024)
                 and (len(thisDomain) <= 1024)):
-            webpageRelationFile.write("{}^{}^{}\n".format(
-                article_ID, url, domain[thisDomain]))
+            webpageRelationFile.write("%s^%s^%s\n" %
+                                      (article_ID, url, domain[thisDomain]))
 
         keywords = row['meta_keywords']
         if (not isNaN(keywords)):
             keywords = keywords[2:-2]
-            if keywords != '':
-                split_keywords = re.split("(?:\'|\"), (?:\'|\")", keywords)
-                for word in split_keywords:
-                    tagsRelationFile.write("{}^{}\n".format(
-                        article_ID,
-                        keyword[word[:128 - 1].replace('\"', '\"\"').lower()]))
+            split_keywords = re.split("(?:\'|\"), (?:\'|\")", keywords)
+            for word in split_keywords:
+                if (len(word) <= 128):
+                    tagsRelationFile.write(
+                        "%s,%s\n" %
+                        (article_ID, keyword[word.replace("\'", "")]))
 
         authors = row['authors']
         if (not isNaN(authors)):
             authors = authors.split(", ")
             for a in authors:
-                writtenByFile.write("{}^{}\n".format(article_ID,
-                                                     author[a.lower()]))
+                if (len(a) <= 64):
+                    writtenByFile.write("%s,%s\n" % (article_ID, author[a]))
+
         article_ID += 1
 
     # ======================================================================
